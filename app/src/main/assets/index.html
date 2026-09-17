@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>4-Track Studio</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none}
+:root{
+  --bg:#1a1a1a;
+  --panel:#222;
+  --panel-dark:#181818;
+  --panel-light:#2a2a2a;
+  --border:#333;
+  --border-light:#444;
+  --text:#d0d0d0;
+  --text2:#909090;
+  --muted:#555;
+  --accent:#ff6b00;
+  --accent2:#ff9500;
+  --record:#e74c3c;
+  --record-active:#ff1a1a;
+  --play:#2ecc71;
+  --solo:#f1c40f;
+  --mute:#666;
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  width:100vw;height:100vh;overflow:hidden;
+  display:flex;flex-direction:column;touch-action:manipulation;
+}
+
+/* HEADER */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 12px;background:var(--panel-dark);
+  border-bottom:1px solid var(--border);flex-shrink:0;height:40px;
+}
+.header-left{display:flex;align-items:center;gap:10px}
+.header h1{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:1px}
+.header-right{display:flex;align-items:center;gap:8px}
+.hdr-btn{
+  padding:4px 10px;border:1px solid var(--border);background:var(--panel);
+  color:var(--text2);border-radius:3px;font-size:10px;font-weight:600;cursor:pointer;
+}
+.hdr-btn:hover{border-color:var(--accent)}
+.hdr-btn.active{border-color:var(--accent);color:var(--accent)}
+
+/* TRANSPORT */
+.transport{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 12px;background:var(--panel);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.transport-btn{
+  width:36px;height:36px;border-radius:50%;
+  border:2px solid var(--border);background:var(--panel-light);
+  color:var(--text2);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.1s;
+}
+.transport-btn:hover{border-color:var(--text)}
+.transport-btn.play-btn.active{
+  border-color:var(--play);color:var(--play);
+  box-shadow:0 0 12px rgba(46,204,113,0.3);
+}
+.transport-btn.record-btn.active{
+  border-color:var(--record-active);color:var(--record-active);
+  box-shadow:0 0 12px rgba(231,76,60,0.5);
+  animation:pulse-record 1s infinite;
+}
+@keyframes pulse-record{
+  0%,100%{box-shadow:0 0 12px rgba(231,76,60,0.5)}
+  50%{box-shadow:0 0 20px rgba(231,76,60,0.8)}
+}
+.transport-info{
+  display:flex;align-items:center;gap:12px;margin-left:auto;
+}
+.time-display{
+  font-family:monospace;font-size:18px;font-weight:700;
+  color:var(--accent);min-width:100px;text-align:center;
+}
+.tempo-control{display:flex;align-items:center;gap:4px}
+.tempo-control input{
+  width:50px;padding:3px 6px;background:var(--panel-dark);
+  border:1px solid var(--border);color:var(--text);
+  border-radius:3px;font-size:12px;text-align:center;
+  font-family:monospace;
+}
+.tempo-control span{font-size:10px;color:var(--muted)}
+
+/* MAIN CONTENT */
+.main{
+  flex:1;display:flex;overflow:hidden;
+}
+
+/* LEFT: TRACK LIST */
+.track-list{
+  width:200px;background:var(--panel);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;
+  overflow-y:auto;
+}
+.track-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 8px;border-bottom:1px solid var(--border);
+  font-size:9px;font-weight:700;color:var(--text2);
+  text-transform:uppercase;letter-spacing:1px;flex-shrink:0;
+}
+.track-channel{
+  display:flex;flex-direction:column;
+  border-bottom:1px solid var(--border);
+  padding:6px;gap:4px;
+}
+.track-channel.recording{border-left:3px solid var(--record-active)}
+.track-channel.playing{border-left:3px solid var(--play)}
+
+.track-name{
+  font-size:10px;font-weight:700;color:var(--text);
+  background:var(--panel-dark);border:1px solid var(--border);
+  padding:3px 6px;border-radius:3px;width:100%;outline:none;
+  color:var(--text);
+}
+.track-controls{
+  display:flex;gap:4px;align-items:center;
+}
+.track-btn{
+  width:22px;height:20px;border:1px solid var(--border);
+  background:var(--panel-dark);border-radius:3px;
+  font-size:8px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);
+}
+.track-btn.arm.active{border-color:var(--record);color:var(--record)}
+.track-btn.mute.active{border-color:var(--mute);color:var(--mute);background:#444}
+.track-btn.solo.active{border-color:var(--solo);color:var(--solo)}
+
+.track-meter{
+  height:6px;background:var(--panel-dark);border-radius:2px;
+  overflow:hidden;border:1px solid var(--border);
+}
+.track-meter-fill{
+  height:100%;width:0%;background:linear-gradient(to right,#2ecc71,#f1c40f,#e74c3c);
+  transition:width 0.05s;
+}
+.track-fader-row{
+  display:flex;align-items:center;gap:4px;
+}
+.track-fader{
+  flex:1;height:4px;-webkit-appearance:none;appearance:none;
+  background:var(--panel-dark);border-radius:2px;outline:none;
+}
+.track-fader::-webkit-slider-thumb{
+  -webkit-appearance:none;width:10px;height:10px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:1px solid var(--panel);
+}
+.track-fader::-moz-range-thumb{
+  width:10px;height:10px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:1px solid var(--panel);
+}
+.track-fader-val{
+  font-size:8px;color:var(--muted);width:24px;text-align:right;
+  font-family:monospace;
+}
+
+/* CENTER: TIMELINE */
+.timeline{
+  flex:1;display:flex;flex-direction:column;
+  background:var(--bg);overflow:hidden;
+}
+.timeline-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:4px 8px;border-bottom:1px solid var(--border);
+  background:var(--panel-dark);flex-shrink:0;
+}
+.timeline-ruler{
+  height:20px;background:var(--panel-dark);
+  border-bottom:1px solid var(--border);
+  position:relative;flex-shrink:0;overflow:hidden;
+}
+.ruler-canvas{width:100%;height:100%}
+.timeline-tracks{
+  flex:1;overflow:auto;position:relative;
+}
+.waveform-canvas{
+  width:100%;height:100%;
+}
+.playhead{
+  position:absolute;top:0;bottom:0;width:2px;
+  background:#fff;box-shadow:0 0 6px #fff;
+  pointer-events:none;z-index:10;
+}
+
+/* RIGHT: MIXER */
+.mixer{
+  width:220px;background:var(--panel);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;
+  overflow-y:auto;
+}
+.mixer-header{
+  padding:6px 8px;border-bottom:1px solid var(--border);
+  font-size:9px;font-weight:700;color:var(--text2);
+  text-transform:uppercase;letter-spacing:1px;flex-shrink:0;
+}
+.mixer-channel{
+  display:flex;flex-direction:column;align-items:center;
+  padding:8px 6px;border-bottom:1px solid var(--border);
+  gap:6px;
+}
+.mixer-channel .ch-label{
+  font-size:9px;font-weight:700;color:var(--text);
+  text-transform:uppercase;letter-spacing:0.5px;
+}
+.mixer-channel .ch-pan{
+  width:60px;height:8px;-webkit-appearance:none;appearance:none;
+  background:var(--panel-dark);border-radius:4px;outline:none;
+}
+.mixer-channel .ch-pan::-webkit-slider-thumb{
+  -webkit-appearance:none;width:12px;height:12px;border-radius:50%;
+  background:var(--accent);cursor:pointer;
+}
+.mixer-channel .ch-pan::-moz-range-thumb{
+  width:12px;height:12px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:none;
+}
+.mixer-channel .ch-fader{
+  writing-mode:vertical-lr;direction:rtl;
+  width:28px;height:100px;
+  -webkit-appearance:none;appearance:none;
+  background:var(--panel-dark);border-radius:4px;outline:none;
+}
+.mixer-channel .ch-fader::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:10px;border-radius:3px;
+  background:var(--accent);cursor:pointer;
+}
+.mixer-channel .ch-fader::-moz-range-thumb{
+  width:20px;height:10px;border-radius:3px;
+  background:var(--accent);cursor:pointer;border:none;
+}
+.mixer-channel .ch-meter{
+  width:12px;height:100px;background:var(--panel-dark);
+  border-radius:3px;overflow:hidden;
+  border:1px solid var(--border);
+  position:relative;
+}
+.mixer-channel .ch-meter-fill{
+  position:absolute;bottom:0;left:0;right:0;
+  height:0%;background:linear-gradient(to top,#2ecc71,#f1c40f,#e74c3c);
+  transition:height 0.05s;
+}
+.mixer-channel .ch-value{
+  font-size:8px;color:var(--muted);font-family:monospace;
+}
+.master-channel{
+  background:var(--panel-dark);
+  border-top:2px solid var(--accent);
+}
+
+/* BOTTOM: FX PANEL */
+.fx-panel{
+  height:120px;background:var(--panel-dark);
+  border-top:1px solid var(--border);
+  display:none;flex-direction:column;flex-shrink:0;
+}
+.fx-panel.active{display:flex}
+.fx-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:4px 8px;border-bottom:1px solid var(--border);
+  font-size:9px;font-weight:700;color:var(--text2);
+  text-transform:uppercase;letter-spacing:1px;
+}
+.fx-grid{
+  display:flex;gap:8px;padding:8px;
+  overflow-x:auto;flex:1;
+}
+.fx-section{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:4px;padding:8px;min-width:120px;
+}
+.fx-section-title{
+  font-size:8px;font-weight:700;color:var(--accent);
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;
+}
+.fx-knob-row{
+  display:flex;align-items:center;gap:6px;margin-bottom:4px;
+}
+.fx-knob-label{font-size:8px;color:var(--text2);width:32px;flex-shrink:0}
+.fx-knob{
+  flex:1;height:4px;-webkit-appearance:none;appearance:none;
+  background:var(--border);border-radius:2px;outline:none;
+}
+.fx-knob::-webkit-slider-thumb{
+  -webkit-appearance:none;width:10px;height:10px;border-radius:50%;
+  background:var(--accent);cursor:pointer;
+}
+.fx-knob::-moz-range-thumb{
+  width:10px;height:10px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:none;
+}
+.fx-knob-value{font-size:8px;color:var(--text);width:24px;text-align:right;font-family:monospace}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* EXPORT MODAL */
+.modal{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.7);z-index:100;
+  align-items:center;justify-content:center;
+}
+.modal.active{display:flex}
+.modal-content{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:8px;padding:20px;min-width:300px;
+  max-width:90vw;max-height:90vh;overflow-y:auto;
+}
+.modal-title{
+  font-size:14px;font-weight:700;color:var(--accent);
+  margin-bottom:12px;
+}
+.modal-close{
+  float:right;background:none;border:none;color:var(--muted);
+  font-size:18px;cursor:pointer;
+}
+.export-progress{
+  width:100%;height:8px;background:var(--bg);
+  border-radius:4px;overflow:hidden;margin-top:8px;
+}
+.export-progress-fill{
+  height:100%;width:0%;background:var(--accent);
+  transition:width 0.3s;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>4-TRACK STUDIO</h1>
+  </div>
+  <div class="header-right">
+    <button class="hdr-btn" id="fxBtn" onclick="toggleFX()">FX</button>
+    <button class="hdr-btn" onclick="showExport()"><box-icon name="download"></box-icon> Export WAV</button>
+    <button class="hdr-btn" onclick="showSettings()">Settings</button>
+  </div>
+</div>
+
+<div class="transport">
+  <button class="transport-btn" id="rewindBtn" onclick="rewind()">⏮</button>
+  <button class="transport-btn play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+  <button class="transport-btn record-btn" id="recordBtn" onclick="toggleRecord()">⏺</button>
+  <button class="transport-btn" id="stopBtn" onclick="stopAll()">■</button>
+  <button class="transport-btn" id="loopBtn" onclick="toggleLoop()">🔁</button>
+  <div class="transport-info">
+    <div class="tempo-control">
+      <input type="number" id="tempoInput" value="120" min="40" max="240">
+      <span>BPM</span>
+    </div>
+    <div class="time-display" id="timeDisplay">00:00:00</div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- LEFT: TRACK LIST -->
+  <div class="track-list" id="trackList">
+    <div class="track-header">
+      <span>Tracks</span>
+    </div>
+  </div>
+
+  <!-- CENTER: TIMELINE -->
+  <div class="timeline">
+    <div class="timeline-ruler">
+      <canvas class="ruler-canvas" id="rulerCanvas"></canvas>
+    </div>
+    <div class="timeline-tracks" id="timelineTracks">
+      <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
+      <div class="playhead" id="playhead"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: MIXER -->
+  <div class="mixer" id="mixerPanel">
+    <div class="mixer-header">Mixer</div>
+  </div>
+</div>
+
+<!-- FX PANEL -->
+<div class="fx-panel" id="fxPanel">
+  <div class="fx-header">
+    <span>Track Effects</span>
+    <select id="fxTrackSelect" onchange="loadFXForTrack()">
+      <option value="0">Track 1</option>
+      <option value="1">Track 2</option>
+      <option value="2">Track 3</option>
+      <option value="3">Track 4</option>
+    </select>
+  </div>
+  <div class="fx-grid" id="fxGrid"></div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="modal" id="exportModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeExport()">×</button>
+    <div class="modal-title">Export to WAV</div>
+    <div id="exportStatus">Preparing...</div>
+    <div class="export-progress">
+      <div class="export-progress-fill" id="exportProgress"></div>
+    </div>
+    <div id="exportComplete" style="display:none;margin-top:12px;text-align:center">
+      <button class="hdr-btn" onclick="downloadWAV()" style="padding:8px 16px;font-size:12px">
+        Download WAV
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal" id="settingsModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeSettings()">×</button>
+    <div class="modal-title">Settings</div>
+    <div class="fx-knob-row">
+      <span class="fx-knob-label">Input</span>
+      <select id="inputSelect" style="flex:1;padding:4px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:3px">
+        <option value="default">Default Mic</option>
+      </select>
+    </div>
+    <div class="fx-knob-row">
+      <span class="fx-knob-label">Sample Rate</span>
+      <select id="sampleRateSelect" style="flex:1;padding:4px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:3px">
+        <option value="44100">44100 Hz</option>
+        <option value="48000">48000 Hz</option>
+      </select>
+    </div>
+    <div class="fx-knob-row">
+      <span class="fx-knob-label">Buffer</span>
+      <select id="bufferSelect" style="flex:1;padding:4px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:3px">
+        <option value="256">256 samples (low latency)</option>
+        <option value="512">512 samples</option>
+        <option value="1024">1024 samples (stable)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// LOW-LATENCY AUDIO ENGINE
+// ============================================================
+let audioCtx = null;
+let masterGain, analyser, masterComp;
+let tracks = [];
+let isPlaying = false;
+let isRecording = false;
+let isLooping = false;
+let recordingTrack = -1;
+let startTime = 0;
+let pauseTime = 0;
+let playheadPos = 0;
+let tempo = 120;
+let exportBlob = null;
+
+// Media recording
+let mediaRecorder = null;
+let recordedChunks = [];
+let audioStream = null;
+
+// Per-track audio
+let trackBuffers = [null, null, null, null];
+let trackSources = [null, null, null, null];
+let trackGainNodes = [null, null, null, null];
+let trackPanNodes = [null, null, null, null];
+let trackMeters = [0, 0, 0, 0];
+let trackArmed = [false, false, false, false];
+let trackMuted = [false, false, false, false];
+let trackSolo = [false, false, false, false];
+let trackVolumes = [0.8, 0.8, 0.8, 0.8];
+let trackPans = [0, 0, 0, 0];
+
+const TRACK_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12'];
+const TRACK_NAMES = ['Track 1', 'Track 2', 'Track 3', 'Track 4'];
+
+// ============================================================
+// INITIALIZE
+// ============================================================
+function initAudio() {
+  if (audioCtx) return;
+  
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+    latencyHint: 'interactive',
+    sampleRate: 44100
+  });
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.7;
+  
+  masterComp = audioCtx.createDynamicsCompressor();
+  masterComp.threshold.value = -12;
+  masterComp.ratio.value = 3;
+  masterComp.attack.value = 0.002;
+  masterComp.release.value = 0.08;
+  
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 512;
+  analyser.smoothingTimeConstant = 0.8;
+
+  // Per-track chains
+  for (let i = 0; i < 4; i++) {
+    trackGainNodes[i] = audioCtx.createGain();
+    trackGainNodes[i].gain.value = trackVolumes[i];
+    
+    trackPanNodes[i] = audioCtx.createStereoPanner();
+    trackPanNodes[i].pan.value = trackPans[i];
+    
+    trackGainNodes[i].connect(trackPanNodes[i]);
+    trackPanNodes[i].connect(masterGain);
+  }
+
+  masterGain.connect(masterComp);
+  masterComp.connect(analyser);
+  analyser.connect(audioCtx.destination);
+
+  // Warm up
+  const warmup = audioCtx.createOscillator();
+  const wg = audioCtx.createGain();
+  wg.gain.value = 0.0001;
+  warmup.connect(wg); wg.connect(audioCtx.destination);
+  warmup.start(); warmup.stop(audioCtx.currentTime + 0.001);
+
+  requestAnimationFrame(updateMeters);
+  requestAnimationFrame(updatePlayhead);
+}
+
+// ============================================================
+// TRACK UI
+// ============================================================
+function buildTrackList() {
+  const list = document.getElementById('trackList');
+  list.innerHTML = '<div class="track-header"><span>Tracks</span></div>';
+
+  for (let i = 0; i < 4; i++) {
+    const ch = document.createElement('div');
+    ch.className = 'track-channel';
+    ch.id = 'trackCh' + i;
+    ch.innerHTML = `
+      <input class="track-name" value="${TRACK_NAMES[i]}" onchange="TRACK_NAMES[${i}]=this.value;buildMixer()">
+      <div class="track-controls">
+        <button class="track-btn arm" id="arm${i}" onclick="toggleArm(${i})">R</button>
+        <button class="track-btn mute" id="mute${i}" onclick="toggleMute(${i})">M</button>
+        <button class="track-btn solo" id="solo${i}" onclick="toggleSolo(${i})">S</button>
+      </div>
+      <div class="track-meter"><div class="track-meter-fill" id="meter${i}"></div></div>
+      <div class="track-fader-row">
+        <input type="range" class="track-fader" id="fader${i}" min="0" max="100" value="${trackVolumes[i]*100}" oninput="setTrackVolume(${i},this.value)">
+        <span class="track-fader-val" id="faderVal${i}">${Math.round(trackVolumes[i]*100)}</span>
+      </div>
+    `;
+    list.appendChild(ch);
+  }
+}
+
+function buildMixer() {
+  const mixer = document.getElementById('mixerPanel');
+  mixer.innerHTML = '<div class="mixer-header">Mixer</div>';
+
+  for (let i = 0; i < 4; i++) {
+    const ch = document.createElement('div');
+    ch.className = 'mixer-channel';
+    ch.innerHTML = `
+      <span class="ch-label">${TRACK_NAMES[i]}</span>
+      <input type="range" class="ch-pan" id="pan${i}" min="-100" max="100" value="${trackPans[i]*100}" oninput="setPan(${i},this.value)">
+      <div class="ch-meter"><div class="ch-meter-fill" id="mixMeter${i}"></div></div>
+      <input type="range" class="ch-fader" id="mixFader${i}" min="0" max="100" value="${trackVolumes[i]*100}" oninput="setTrackVolume(${i},this.value)">
+      <span class="ch-value" id="mixFaderVal${i}">${Math.round(trackVolumes[i]*100)}</span>
+    `;
+    mixer.appendChild(ch);
+  }
+
+  // Master channel
+  const master = document.createElement('div');
+  master.className = 'mixer-channel master-channel';
+  master.innerHTML = `
+    <span class="ch-label">Master</span>
+    <div class="ch-meter"><div class="ch-meter-fill" id="masterMeter"></div></div>
+    <input type="range" class="ch-fader" id="masterFader" min="0" max="100" value="70" oninput="setMasterVolume(this.value)">
+    <span class="ch-value" id="masterVal">70</span>
+  `;
+  mixer.appendChild(master);
+}
+
+// ============================================================
+// TRACK CONTROLS
+// ============================================================
+function toggleArm(i) {
+  trackArmed[i] = !trackArmed[i];
+  document.getElementById('arm' + i).classList.toggle('active', trackArmed[i]);
+  document.getElementById('trackCh' + i).classList.toggle('recording', trackArmed[i]);
+}
+
+function toggleMute(i) {
+  trackMuted[i] = !trackMuted[i];
+  document.getElementById('mute' + i).classList.toggle('active', trackMuted[i]);
+  document.getElementById('mute' + i).style.color = trackMuted[i] ? '#fff' : '';
+}
+
+function toggleSolo(i) {
+  trackSolo[i] = !trackSolo[i];
+  document.getElementById('solo' + i).classList.toggle('active', trackSolo[i]);
+}
+
+function setTrackVolume(i, val) {
+  trackVolumes[i] = val / 100;
+  if (trackGainNodes[i]) trackGainNodes[i].gain.value = trackVolumes[i];
+  document.getElementById('faderVal' + i).textContent = val;
+  document.getElementById('mixFader' + i).value = val;
+  document.getElementById('mixFaderVal' + i).textContent = val;
+}
+
+function setPan(i, val) {
+  trackPans[i] = val / 100;
+  if (trackPanNodes[i]) trackPanNodes[i].pan.value = trackPans[i];
+}
+
+function setMasterVolume(val) {
+  const v = val / 100;
+  if (masterGain) masterGain.gain.value = v;
+  document.getElementById('masterVal').textContent = val;
+}
+
+// ============================================================
+// TRANSPORT CONTROLS
+// ============================================================
+function togglePlay() {
+  initAudio();
+  if (isPlaying) {
+    pausePlayback();
+  } else {
+    startPlayback();
+  }
+}
+
+function startPlayback() {
+  if (!audioCtx) return;
+  isPlaying = true;
+  document.getElementById('playBtn').classList.add('active');
+  document.getElementById('playBtn').textContent = '⏸';
+  
+  const offset = pauseTime;
+  startTime = audioCtx.currentTime - offset;
+
+  for (let i = 0; i < 4; i++) {
+    if (trackBuffers[i] && !trackMuted[i]) {
+      const src = audioCtx.createBufferSource();
+      src.buffer = trackBuffers[i];
+      src.connect(trackGainNodes[i]);
+      src.start(0, offset);
+      trackSources[i] = src;
+    }
+  }
+}
+
+function pausePlayback() {
+  isPlaying = false;
+  document.getElementById('playBtn').classList.remove('active');
+  document.getElementById('playBtn').textContent = '▶';
+  
+  pauseTime = audioCtx.currentTime - startTime;
+  
+  for (let i = 0; i < 4; i++) {
+    if (trackSources[i]) {
+      trackSources[i].stop();
+      trackSources[i] = null;
+    }
+  }
+}
+
+function stopAll() {
+  isPlaying = false;
+  isRecording = false;
+  pauseTime = 0;
+  playheadPos = 0;
+  document.getElementById('playBtn').classList.remove('active');
+  document.getElementById('playBtn').textContent = '▶';
+  document.getElementById('recordBtn').classList.remove('active');
+  
+  for (let i = 0; i < 4; i++) {
+    if (trackSources[i]) {
+      trackSources[i].stop();
+      trackSources[i] = null;
+    }
+  }
+  stopMediaRecording();
+  updateTimeDisplay();
+}
+
+function rewind() {
+  stopAll();
+  pauseTime = 0;
+  playheadPos = 0;
+  updateTimeDisplay();
+}
+
+function toggleRecord() {
+  initAudio();
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+function startRecording() {
+  // Find armed track
+  let armedTrack = trackArmed.indexOf(true);
+  if (armedTrack === -1) {
+    alert('Arm a track first (click R button)');
+    return;
+  }
+
+  // Start playback if not playing
+  if (!isPlaying) {
+    startPlayback();
+  }
+
+  isRecording = true;
+  recordingTrack = armedTrack;
+  document.getElementById('recordBtn').classList.add('active');
+  document.getElementById('trackCh' + armedTrack).classList.add('recording');
+
+  // Start media recording
+  startMediaRecording(armedTrack);
+}
+
+function stopRecording() {
+  isRecording = false;
+  document.getElementById('recordBtn').classList.remove('active');
+  document.getElementById('trackCh' + recordingTrack).classList.remove('recording');
+  stopMediaRecording();
+}
+
+function toggleLoop() {
+  isLooping = !isLooping;
+  document.getElementById('loopBtn').classList.toggle('active', isLooping);
+}
+
+// ============================================================
+// MEDIA RECORDING (Microphone)
+// ============================================================
+async function startMediaRecording(trackIndex) {
+  try {
+    audioStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        sampleRate: 44100,
+        channelCount: 1
+      }
+    });
+
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(audioStream, {
+      mimeType: 'audio/webm;codecs=opus'
+    });
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        recordedChunks.push(e.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+      const arrayBuffer = await blob.arrayBuffer();
+      
+      try {
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        trackBuffers[trackIndex] = audioBuffer;
+        drawWaveforms();
+      } catch (e) {
+        console.error('Decode error:', e);
+        alert('Recording failed. Try again.');
+      }
+    };
+
+    mediaRecorder.start(100); // Collect data every 100ms
+
+  } catch (e) {
+    console.error('Mic access error:', e);
+    alert('Microphone access denied. Please allow microphone access.');
+    isRecording = false;
+    document.getElementById('recordBtn').classList.remove('active');
+  }
+}
+
+function stopMediaRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+  if (audioStream) {
+    audioStream.getTracks().forEach(t => t.stop());
+    audioStream = null;
+  }
+}
+
+// ============================================================
+// METERS & PLAYHEAD
+// ============================================================
+function updateMeters() {
+  requestAnimationFrame(updateMeters);
+  if (!analyser) return;
+
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(data);
+
+  // Master meter
+  let masterSum = 0;
+  for (let i = 0; i < data.length; i++) masterSum += data[i];
+  const masterLevel = masterSum / data.length / 255;
+  document.getElementById('masterMeter').style.height = (masterLevel * 100) + '%';
+
+  // Track meters (simulated from master for now)
+  for (let i = 0; i < 4; i++) {
+    if (trackBuffers[i] && !trackMuted[i]) {
+      const meterLevel = masterLevel * trackVolumes[i] * 0.8;
+      const meterEl = document.getElementById('mixMeter' + i);
+      const trackMeter = document.getElementById('meter' + i);
+      if (meterEl) meterEl.style.height = (meterLevel * 100) + '%';
+      if (trackMeter) trackMeter.style.width = (meterLevel * 100) + '%';
+    }
+  }
+}
+
+function updatePlayhead() {
+  requestAnimationFrame(updatePlayhead);
+  if (!audioCtx || (!isPlaying && !isRecording)) return;
+
+  const elapsed = audioCtx.currentTime - startTime;
+  playheadPos = elapsed;
+  
+  updateTimeDisplay();
+  drawRuler();
+  drawWaveforms();
+}
+
+function updateTimeDisplay() {
+  const mins = Math.floor(playheadPos / 60);
+  const secs = Math.floor(playheadPos % 60);
+  const ms = Math.floor((playheadPos % 1) * 100);
+  document.getElementById('timeDisplay').textContent = 
+    String(mins).padStart(2, '0') + ':' + 
+    String(secs).padStart(2, '0') + ':' + 
+    String(ms).padStart(2, '0');
+}
+
+// ============================================================
+// TIMELINE / WAVEFORM DISPLAY
+// ============================================================
+function drawWaveforms() {
+  const canvas = document.getElementById('waveformCanvas');
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('timelineTracks');
+  
+  canvas.width = Math.max(container.scrollWidth, container.clientWidth) * 2;
+  canvas.height = container.clientHeight * 2;
+  
+  const w = canvas.width;
+  const h = canvas.height;
+  const trackHeight = h / 4;
+
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, w, h);
+
+  // Draw track backgrounds
+  for (let i = 0; i < 4; i++) {
+    const y = i * trackHeight;
+    ctx.fillStyle = i % 2 === 0 ? '#1e1e1e' : '#1c1c1c';
+    ctx.fillRect(0, y, w, trackHeight);
+    
+    // Track separator
+    ctx.strokeStyle = '#2a2a2a';
+    ctx.beginPath();
+    ctx.moveTo(0, y + trackHeight);
+    ctx.lineTo(w, y + trackHeight);
+    ctx.stroke();
+  }
+
+  // Draw waveforms
+  const totalDuration = Math.max(...trackBuffers.map(b => b ? b.duration : 0), 10);
+  const pixelsPerSecond = w / totalDuration;
+
+  for (let i = 0; i < 4; i++) {
+    if (!trackBuffers[i]) continue;
+    
+    const buffer = trackBuffers[i];
+    const data = buffer.getChannelData(0);
+    const y = i * trackHeight;
+    const centerY = y + trackHeight / 2;
+    const samplesPerPixel = Math.floor(data.length / w);
+
+    ctx.strokeStyle = TRACK_COLORS[i];
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+
+    for (let x = 0; x < w; x++) {
+      const startSample = Math.floor(x / pixelsPerSecond * buffer.sampleRate);
+      let min = 1, max = -1;
+      
+      for (let s = 0; s < samplesPerPixel; s++) {
+        const idx = startSample + s;
+        if (idx < data.length) {
+          min = Math.min(min, data[idx]);
+          max = Math.max(max, data[idx]);
+        }
+      }
+
+      const yMin = centerY + min * (trackHeight / 2) * 0.8;
+      const yMax = centerY + max * (trackHeight / 2) * 0.8;
+      
+      if (x === 0) ctx.moveTo(x, yMin);
+      else ctx.lineTo(x, yMin);
+      ctx.lineTo(x, yMax);
+    }
+    ctx.stroke();
+  }
+
+  // Draw playhead
+  const playheadX = (playheadPos / totalDuration) * w;
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.shadowBlur = 6;
+  ctx.shadowColor = '#fff';
+  ctx.beginPath();
+  ctx.moveTo(playheadX, 0);
+  ctx.lineTo(playheadX, h);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Update playhead position
+  document.getElementById('playhead').style.left = playheadX / 2 + 'px';
+}
+
+function drawRuler() {
+  const canvas = document.getElementById('rulerCanvas');
+  const ctx = canvas.getContext('2d');
+  const container = document.getElementById('timeline-ruler');
+  
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = canvas.offsetHeight * 2;
+  
+  const w = canvas.width;
+  const h = canvas.height;
+  const totalDuration = Math.max(...trackBuffers.map(b => b ? b.duration : 0), 10);
+  const pixelsPerSecond = w / totalDuration;
+
+  ctx.fillStyle = '#181818';
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.strokeStyle = '#444';
+  ctx.fillStyle = '#666';
+  ctx.font = '10px monospace';
+
+  const step = tempo > 150 ? 0.5 : 1;
+  
+  for (let t = 0; t < totalDuration; t += step) {
+    const x = t * pixelsPerSecond;
+    const isBeat = t % 1 === 0;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, isBeat ? 0 : h * 0.5);
+    ctx.lineTo(x, h);
+    ctx.strokeStyle = isBeat ? '#666' : '#333';
+    ctx.stroke();
+    
+    if (isBeat) {
+      const mins = Math.floor(t / 60);
+      const secs = Math.floor(t % 60);
+      ctx.fillText(mins + ':' + String(secs).padStart(2, '0'), x + 2, 12);
+    }
+  }
+}
+
+// ============================================================
+// FX PANEL
+// ============================================================
+function toggleFX() {
+  const panel = document.getElementById('fxPanel');
+  panel.classList.toggle('active');
+}
+
+function loadFXForTrack() {
+  const trackIdx = parseInt(document.getElementById('fxTrackSelect').value);
+  const grid = document.getElementById('fxGrid');
+  grid.innerHTML = `
+    <div class="fx-section">
+      <div class="fx-section-title">EQ</div>
+      <div class="fx-knob-row"><span class="fx-knob-label">Low</span><input type="range" class="fx-knob" id="eqLow" min="-12" max="12" value="0" oninput="document.getElementById('eqLowVal').textContent=this.value"><span class="fx-knob-value" id="eqLowVal">0</span></div>
+      <div class="fx-knob-row"><span class="fx-knob-label">Mid</span><input type="range" class="fx-knob" id="eqMid" min="-12" max="12" value="0" oninput="document.getElementById('eqMidVal').textContent=this.value"><span class="fx-knob-value" id="eqMidVal">0</span></div>
+      <div class="fx-knob-row"><span class="fx-knob-label">High</span><input type="range" class="fx-knob" id="eqHigh" min="-12" max="12" value="0" oninput="document.getElementById('eqHighVal').textContent=this.value"><span class="fx-knob-value" id="eqHighVal">0</span></div>
+    </div>
+    <div class="fx-section">
+      <div class="fx-section-title">Reverb</div>
+      <div class="fx-knob-row"><span class="fx-knob-label">Size</span><input type="range" class="fx-knob" id="fxRvSize" min="0" max="100" value="0" oninput="document.getElementById('fxRvSizeVal').textContent=this.value"><span class="fx-knob-value" id="fxRvSizeVal">0</span></div>
+      <div class="fx-knob-row"><span class="fx-knob-label">Mix</span><input type="range" class="fx-knob" id="fxRvMix" min="0" max="100" value="0" oninput="document.getElementById('fxRvMixVal').textContent=this.value"><span class="fx-knob-value" id="fxRvMixVal">0</span></div>
+    </div>
+    <div class="fx-section">
+      <div class="fx-section-title">Delay</div>
+      <div class="fx-knob-row"><span class="fx-knob-label">Time</span><input type="range" class="fx-knob" id="fxDlTime" min="0" max="100" value="0" oninput="document.getElementById('fxDlTimeVal').textContent=this.value"><span class="fx-knob-value" id="fxDlTimeVal">0</span></div>
+      <div class="fx-knob-row"><span class="fx-knob-label">Mix</span><input type="range" class="fx-knob" id="fxDlMix" min="0" max="100" value="0" oninput="document.getElementById('fxDlMixVal').textContent=this.value"><span class="fx-knob-value" id="fxDlMixVal">0</span></div>
+    </div>
+    <div class="fx-section">
+      <div class="fx-section-title">Comp</div>
+      <div class="fx-knob-row"><span class="fx-knob-label">Thresh</span><input type="range" class="fx-knob" id="fxCompThr" min="-60" max="0" value="-20" oninput="document.getElementById('fxCompThrVal').textContent=this.value"><span class="fx-knob-value" id="fxCompThrVal">-20</span></div>
+      <div class="fx-knob-row"><span class="fx-knob-label">Ratio</span><input type="range" class="fx-knob" id="fxCompRat" min="1" max="20" value="4" oninput="document.getElementById('fxCompRatVal').textContent=this.value"><span class="fx-knob-value" id="fxCompRatVal">4</span></div>
+    </div>
+  `;
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function showExport() {
+  document.getElementById('exportModal').classList.add('active');
+  document.getElementById('exportStatus').textContent = 'Preparing...';
+  document.getElementById('exportProgress').style.width = '0%';
+  document.getElementById('exportComplete').style.display = 'none';
+
+  setTimeout(doExport, 100);
+}
+
+function doExport() {
+  const statusEl = document.getElementById('exportStatus');
+  const progressEl = document.getElementById('exportProgress');
+
+  statusEl.textContent = 'Mixing tracks...';
+  progressEl.style.width = '20%';
+
+  // Find longest track
+  let maxDuration = 0;
+  let maxSampleRate = 44100;
+  
+  for (let i = 0; i < 4; i++) {
+    if (trackBuffers[i]) {
+      maxDuration = Math.max(maxDuration, trackBuffers[i].duration);
+      maxSampleRate = Math.max(maxSampleRate, trackBuffers[i].sampleRate);
+    }
+  }
+
+  if (maxDuration === 0) {
+    statusEl.textContent = 'No audio recorded!';
+    return;
+  }
+
+  // Create offline context for rendering
+  const offlineCtx = new OfflineAudioContext(2, maxSampleRate * maxDuration, maxSampleRate);
+  
+  // Create gain nodes for mixing
+  const gainNodes = [];
+  for (let i = 0; i < 4; i++) {
+    gainNodes[i] = offlineCtx.createGain();
+    gainNodes[i].gain.value = trackVolumes[i];
+    gainNodes[i].connect(offlineCtx.destination);
+  }
+
+  statusEl.textContent = 'Rendering audio...';
+  progressEl.style.width = '50%';
+
+  // Schedule all buffers
+  for (let i = 0; i < 4; i++) {
+    if (trackBuffers[i]) {
+      const src = offlineCtx.createBufferSource();
+      src.buffer = trackBuffers[i];
+      src.connect(gainNodes[i]);
+      src.start(0);
+    }
+  }
+
+  offlineCtx.startRendering().then((renderedBuffer) => {
+    statusEl.textContent = 'Encoding WAV...';
+    progressEl.style.width = '80%';
+
+    // Convert to WAV
+    const wavBlob = bufferToWav(renderedBuffer);
+    exportBlob = wavBlob;
+
+    statusEl.textContent = 'Done!';
+    progressEl.style.width = '100%';
+    document.getElementById('exportComplete').style.display = 'block';
+  }).catch((e) => {
+    statusEl.textContent = 'Error: ' + e.message;
+  });
+}
+
+function bufferToWav(buffer) {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+  
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  
+  const dataLength = buffer.length * blockAlign;
+  const bufferLength = 44 + dataLength;
+  
+  const arrayBuffer = new ArrayBuffer(bufferLength);
+  const view = new DataView(arrayBuffer);
+  
+  // WAV header
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true); // Subchunk1Size
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataLength, true);
+  
+  // Interleave channels
+  const channels = [];
+  for (let ch = 0; ch < numChannels; ch++) {
+    channels.push(buffer.getChannelData(ch));
+  }
+  
+  let offset = 44;
+  for (let i = 0; i < buffer.length; i++) {
+    for (let ch = 0; ch < numChannels; ch++) {
+      const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+      const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      view.setInt16(offset, intSample, true);
+      offset += 2;
+    }
+  }
+  
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
+}
+
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
+function downloadWAV() {
+  if (!exportBlob) return;
+  const url = URL.createObjectURL(exportBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '4-track-recording.wav';
+  a.click();
+  URL.revokeObjectURL(url);
+  closeExport();
+}
+
+function closeExport() {
+  document.getElementById('exportModal').classList.remove('active');
+}
+
+function showSettings() {
+  document.getElementById('settingsModal').classList.add('active');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('active');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+buildTrackList();
+buildMixer();
+drawWaveforms();
+drawRuler();
+
+document.body.addEventListener('pointerdown', () => initAudio(), { once: true });
+document.body.addEventListener('touchstart', () => initAudio(), { once: true });
+</script>
+</body>
+</html>
